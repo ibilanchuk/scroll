@@ -1,8 +1,11 @@
+import random
 from typing import Union, Dict
 
 import aiohttp
 from loguru import logger
+from typing import List
 
+from web3 import AsyncWeb3
 from settings import LAYERSWAP_API_KEY
 from utils.gas_checker import check_gas
 from utils.helpers import retry
@@ -148,7 +151,8 @@ class LayerSwap(Account):
             decimal: int,
             all_amount: bool,
             min_percent: int,
-            max_percent: int
+            max_percent: int,
+            save_funds: List[float]
     ):
         amount_wei, amount, balance = await self.get_amount(
             "ETH",
@@ -159,6 +163,10 @@ class LayerSwap(Account):
             min_percent,
             max_percent
         )
+
+        if all_amount:
+            save_funds = AsyncWeb3.from_wei(AsyncWeb3.to_wei(random.uniform(*save_funds), 'ether'), 'ether')
+            amount -= save_funds
 
         available_route = await self.check_available_route(from_chain, to_chain)
 

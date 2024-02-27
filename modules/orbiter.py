@@ -1,5 +1,8 @@
+from typing import List
+import random
 import aiohttp
 from loguru import logger
+from web3 import AsyncWeb3
 
 from utils.gas_checker import check_gas
 from utils.helpers import retry
@@ -64,7 +67,8 @@ class Orbiter(Account):
             decimal: int,
             all_amount: bool,
             min_percent: int,
-            max_percent: int
+            max_percent: int,
+            save_funds: List[float]
     ):
         amount_wei, amount, balance = await self.get_amount(
             "ETH",
@@ -80,6 +84,10 @@ class Orbiter(Account):
             f"[{self.account_id}][{self.address}] Bridge {self.chain} –> {destination_chain} | {amount} ETH"
         )
 
+        if all_amount:
+            save_funds = AsyncWeb3.from_wei(AsyncWeb3.to_wei(random.uniform(*save_funds), 'ether'), 'ether')
+            amount -= save_funds
+            
         if ORBITER_CONTRACT == "":
             logger.error(f"[{self.account_id}][{self.address}] Don't have orbiter contract")
             return

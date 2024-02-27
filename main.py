@@ -110,10 +110,7 @@ def _async_run_module(module, account_id, key, recipient):
 
 
 def main(module):
-    if module in [make_transfer]:
-        wallets = get_wallets(True)
-    else:
-        wallets = get_wallets()
+    wallets = get_wallets(True)
 
     if RANDOM_WALLET:
         random.shuffle(wallets)

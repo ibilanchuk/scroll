@@ -1,6 +1,86 @@
 import asyncio
 from modules import *
+from modules.okx import Okx
+from utils.sleeping import sleep
+from loguru import logger
 
+async def withdraw_okx(_id, key, recipient):
+    """
+    Withdraw ETH from OKX
+    ______________________________________________________
+    min_amount - min amount (ETH)
+    max_amount - max_amount (ETH)
+    chains - ['zksync', 'arbitrum', 'linea', 'base', 'optimism']
+    terminate - if True - terminate program if money is not withdrawn
+    """
+    token = 'ETH'
+
+    #chains = ['arbitrum', 'zksync', 'linea', 'base', 'optimism']
+    chains = ['zksync']
+
+    min_amount = 0.05
+    max_amount = 0.08
+
+    terminate = True
+
+    okx_exchange = Okx(_id, key, chains, recipient)
+    await okx_exchange.okx_withdraw(min_amount, max_amount, token, terminate)
+
+
+async def bridge_orbiter_from_scroll(account_id, key, recipient):
+    """
+    Bridge from orbiter
+    ______________________________________________________
+    from_chain – ethereum, polygon_zkevm, arbitrum, optimism, zksync | Select one
+    to_chain – ethereum, polygon_zkevm, arbitrum, optimism, zksync | Select one
+
+    save_funds - how much eth save on the account (min and max, choose randomly)
+    min_required_amount - минимальная требуемая сумма в сети, на которую будет реагировать модуль в eth
+    """
+
+    #from_chains = ["arbitrum", "optimism", "base", "scroll", "linea"]
+    #to_chain = "zksync"
+
+    from_chains = ["scroll"]
+    to_chain = "linea"
+
+    min_amount = 0.005
+    max_amount = 0.0051
+    decimal = 4
+
+    all_amount = True
+
+    min_percent = 98
+    max_percent = 100
+    save_funds = [0.0005, 0.0007]
+    min_required_amount = 0.001
+
+    orbiter = Orbiter(account_id, key, from_chains, recipient, min_required_amount)
+    await orbiter.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds)
+
+
+async def deposit_full_amount_okx(_id, key, recipient):
+    """
+    Deposit all ETH to OKX
+    ______________________________________________________
+    min_left_amount - min amount to left on account (ETH)
+    max_left_amount - max amount to left on account (ETH)
+    chains - ['zksync', 'arbitrum', 'linea', 'base', 'optimism']
+    to_address - address to send
+    terminate - if True - terminate program if money is not withdrawn
+    """
+    token = 'ETH'
+    to_address = recipient
+    chains = ['linea']
+
+    min_left_amount = 0.00035
+    max_left_amount = 0.00043
+
+    terminate = True
+    if len(recipient) == 0:
+        raise ValueError('recipient is null')
+    okx_exchange = Okx(_id, key, chains, recipient)
+    await okx_exchange.okx_deposit(min_left_amount, max_left_amount, token, to_address, terminate)
 
 async def deposit_scroll(account_id, key, recipient):
     """
@@ -41,30 +121,36 @@ async def withdraw_scroll(account_id, key, recipient):
     scroll = Scroll(account_id, key, "scroll", recipient)
     await scroll.withdraw(min_amount, max_amount, decimal, all_amount, min_percent, max_percent)
 
-
 async def bridge_orbiter(account_id, key, recipient):
     """
     Bridge from orbiter
     ______________________________________________________
-    from_chain – ethereum, base, polygon_zkevm, arbitrum, optimism, zksync, scroll | Select one
-    to_chain – ethereum, base, polygon_zkevm, arbitrum, optimism, zksync, scroll | Select one
+    from_chain – ethereum, polygon_zkevm, arbitrum, optimism, zksync | Select one
+    to_chain – ethereum, polygon_zkevm, arbitrum, optimism, zksync | Select one
+
+    save_funds - how much eth save on the account (min and max, choose randomly)
+    min_required_amount - минимальная требуемая сумма в сети, на которую будет реагировать модуль в eth
     """
 
-    from_chain = "scroll"
-    to_chain = "base"
+    #from_chains = ["arbitrum", "optimism", "base", "scroll", "linea"]
+    #to_chain = "zksync"
+
+    from_chains = ["zksync"]
+    to_chain = "scroll"
 
     min_amount = 0.005
     max_amount = 0.0051
     decimal = 4
 
-    all_amount = False
+    all_amount = True
 
-    min_percent = 5
-    max_percent = 10
+    min_percent = 98
+    max_percent = 100
+    save_funds = [0.007, 0.011]
+    min_required_amount = 0.001
 
-    orbiter = Orbiter(account_id=account_id, private_key=key, chain=from_chain, recipient=recipient)
-    await orbiter.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent)
-
+    orbiter = Orbiter(account_id, key, from_chains, recipient, min_required_amount)
+    await orbiter.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds)
 
 async def bridge_layerswap(account_id, key, recipient):
     """
@@ -88,12 +174,13 @@ async def bridge_layerswap(account_id, key, recipient):
 
     all_amount = True
 
-    min_percent = 5
-    max_percent = 5
+    min_percent = 98
+    max_percent = 100
+    save_funds = [0.007, 0.011]
 
     layerswap = LayerSwap(account_id=account_id, private_key=key, chain=from_chain, recipient=recipient)
     await layerswap.bridge(
-        from_chain, to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent
+        from_chain, to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds
     )
 
 
@@ -518,8 +605,8 @@ async def swap_multiswap(account_id, key, recipient):
 
     back_swap = True
 
-    min_percent = 5
-    max_percent = 10
+    min_percent = 20
+    max_percent = 30
 
     multi = Multiswap(account_id, key, recipient)
     await multi.swap(
@@ -606,19 +693,44 @@ async def custom_routes(account_id, key, recipient):
     example (send_mail, 1, 10) run this module 1 to 10 times
     """
 
+    logger.info(f"[{account_id}][{recipient}] Acc recipient")
+
     use_modules = [
-        create_omnisea,
-        [create_omnisea, mint_zerius, None],
-        (create_omnisea, 1, 3),
+        mint_zerius,
+        swap_multiswap,
+        [create_omnisea, None],
+        [mint_zkstars, mint_l2pass],
+        [deploy_contract, None],
+        [send_mail, create_safe, None],
+        [deposit_layerbank, deposit_aave]
     ]
 
-    sleep_from = 300
-    sleep_to = 700
+    sleep_from = 110
+    sleep_to = 200
 
     random_module = True
 
+    await withdraw_okx(account_id, key, recipient);
+    
+    await sleep(sleep_from, sleep_to);
+
+    bridge_scroll_actions = [
+        [bridge_layerswap, bridge_orbiter]
+    ]
+    
     routes = Routes(account_id, key, recipient)
+
+    await routes.start(bridge_scroll_actions, sleep_from, sleep_to, False)
+
     await routes.start(use_modules, sleep_from, sleep_to, random_module)
+
+    await bridge_orbiter_from_scroll(account_id, key, recipient);
+
+    await sleep(160, 200);
+
+    await deposit_full_amount_okx(account_id, key, recipient);
+    
+    await sleep(200, 250);
 
 
 #########################################
