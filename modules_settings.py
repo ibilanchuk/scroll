@@ -199,13 +199,14 @@ async def bridge_nitro(account_id, key, recipient):
     max_amount = 0.0051
     decimal = 4
 
-    all_amount = False
+    all_amount = True
 
-    min_percent = 5
-    max_percent = 10
+    min_percent = 98
+    max_percent = 100
+    save_funds = [0.007, 0.011]
 
     nitro = Nitro(account_id=account_id, private_key=key, chain=from_chain, recipient=recipient)
-    await nitro.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent)
+    await nitro.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds)
 
 
 async def wrap_eth(account_id, key, recipient):
@@ -715,7 +716,7 @@ async def custom_routes(account_id, key, recipient):
     await sleep(sleep_from, sleep_to);
 
     bridge_scroll_actions = [
-        [bridge_layerswap, bridge_orbiter]
+        [bridge_nitro, bridge_layerswap, bridge_orbiter]
     ]
     
     routes = Routes(account_id, key, recipient)

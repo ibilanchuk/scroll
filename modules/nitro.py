@@ -1,9 +1,11 @@
+import random
 import aiohttp
 from loguru import logger
+from web3 import AsyncWeb3
 from utils.gas_checker import check_gas
 from utils.helpers import retry
 from .account import Account
-
+from typing import List
 
 class Nitro(Account):
     def __init__(self, account_id: int, private_key: str, chain: str, recipient: str) -> None:
@@ -58,7 +60,8 @@ class Nitro(Account):
             decimal: int,
             all_amount: bool,
             min_percent: int,
-            max_percent: int
+            max_percent: int,
+            save_funds: List[float]
     ):
         amount_wei, amount, balance = await self.get_amount(
             "ETH",
@@ -70,9 +73,13 @@ class Nitro(Account):
             max_percent
         )
 
+        if all_amount:
+            save_funds = AsyncWeb3.to_wei(random.uniform(*save_funds), 'ether')
+            amount_wei -= save_funds
+            
         logger.info(
             f"[{self.account_id}][{self.address}] Bridge Nitro – {self.chain.title()} -> " +
-            f"{destination_chain.title()} | {amount} ETH"
+            f"{destination_chain.title()} | {AsyncWeb3.from_wei(amount_wei, 'ether')} ETH"
         )
 
         quote = await self.get_quote(amount_wei, destination_chain)
