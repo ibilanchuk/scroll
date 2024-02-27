@@ -53,9 +53,8 @@ async def bridge_orbiter_from_scroll(account_id, key, recipient):
     min_percent = 98
     max_percent = 100
     save_funds = [0.0005, 0.0007]
-    min_required_amount = 0.001
 
-    orbiter = Orbiter(account_id, key, from_chains, recipient, min_required_amount)
+    orbiter = Orbiter(account_id, key, from_chains, recipient)
     await orbiter.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds)
 
 
@@ -147,9 +146,8 @@ async def bridge_orbiter(account_id, key, recipient):
     min_percent = 98
     max_percent = 100
     save_funds = [0.007, 0.011]
-    min_required_amount = 0.001
 
-    orbiter = Orbiter(account_id, key, from_chains, recipient, min_required_amount)
+    orbiter = Orbiter(account_id, key, from_chains, recipient)
     await orbiter.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds)
 
 async def bridge_layerswap(account_id, key, recipient):
@@ -182,6 +180,31 @@ async def bridge_layerswap(account_id, key, recipient):
     await layerswap.bridge(
         from_chain, to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds
     )
+
+
+async def bridge_nitro_to_linea(account_id, key, recipient):
+    """
+    Bridge from nitro
+    ______________________________________________________
+    from_chain – ethereum, arbitrum, optimism, zksync, scroll, base, linea | Select one
+    to_chain – ethereum, arbitrum, optimism, zksync, scroll, base, linea | Select one
+    """
+
+    from_chain = "scroll"
+    to_chain = "linea"
+
+    min_amount = 0.005
+    max_amount = 0.0051
+    decimal = 4
+
+    all_amount = True
+
+    min_percent = 98
+    max_percent = 100
+    save_funds = [0.0008, 0.001]
+
+    nitro = Nitro(account_id=account_id, private_key=key, chain=from_chain, recipient=recipient)
+    await nitro.bridge(to_chain, min_amount, max_amount, decimal, all_amount, min_percent, max_percent, save_funds)
 
 
 async def bridge_nitro(account_id, key, recipient):
@@ -715,7 +738,7 @@ async def custom_routes(account_id, key, recipient):
     
     await sleep(sleep_from, sleep_to);
 
-    bridge_scroll_actions = [
+    bridge_scroll_actions : list = [
         [bridge_nitro, bridge_layerswap, bridge_orbiter]
     ]
     
@@ -725,7 +748,11 @@ async def custom_routes(account_id, key, recipient):
 
     await routes.start(use_modules, sleep_from, sleep_to, random_module)
 
-    await bridge_orbiter_from_scroll(account_id, key, recipient);
+    bridge_from_scroll_actions : list = [
+        [bridge_nitro_to_linea, bridge_orbiter_from_scroll]
+    ]
+    
+    await routes.start(bridge_from_scroll_actions, sleep_from, sleep_to, False)
 
     await sleep(160, 200);
 

@@ -1,5 +1,5 @@
 import random
-
+from typing import Union, List
 from loguru import logger
 from utils.sleeping import sleep
 from .account import Account
@@ -17,7 +17,7 @@ class Routes(Account):
         else:
             return module
 
-    def run_modules(self, use_modules):
+    def run_modules(self, use_modules) -> List:
         modules_to_run = []
         for module in use_modules:
             result = self.process_module(module)
